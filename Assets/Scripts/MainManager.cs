@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+    public static MainManager Instance;
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text NameText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -37,7 +40,21 @@ public class MainManager : MonoBehaviour
             }
         }
     }
+    private void Awake()
+    {
+        // start of new code
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        // end of new code
 
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        LoadScore();
+
+    }
     private void Update()
     {
         if (!m_Started)
@@ -67,7 +84,40 @@ public class MainManager : MonoBehaviour
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
     }
+    void AddName(Text Name)
+    {
+        NameText.text = $"Name : {Name}";
+    }
+    [System.Serializable]
+    class SaveData
+    {
+        public Text ScoreText;
+        public Text NameText;
+    }
 
+    public void SaveScore()
+    {
+        SaveData data = new SaveData();
+        data.ScoreText = ScoreText;
+        data.NameText = NameText;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            ScoreText = data.ScoreText;
+            NameText = data.NameText;
+        }
+    }
     public void GameOver()
     {
         m_GameOver = true;
